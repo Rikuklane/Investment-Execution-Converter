@@ -1,0 +1,219 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Run Tests
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Create simple test runner
+      run: |
+        cat > test-ci.js << 'EOF'
+        // Simple CI test runner
+        const fs = require('fs');
+        const { JSDOM } = require('jsdom');
+        
+        // Setup DOM environment
+        const dom = new JSDOM(`
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+            </head>
+            <body>
+              <div id="testResults"></div>
+              <textarea id="cryptoSymbols">BTC,ETH</textarea>
+              <textarea id="stockSymbols">AAPL,MSFT</textarea>
+              <script src="app.js"></script>
+            </body>
+          </html>
+        `, { runScripts: "dangerously", resources: "usable" });
+        
+        global.window = dom.window;
+        global.document = dom.window.document;
+        global.localStorage = {
+          data: {},
+          getItem: function(key) { return this.data[key] || null; },
+          setItem: function(key, value) { this.data[key] = value; }
+        };
+        
+        // Mock Papa Parse
+        global.window.Papa = {
+          parse: function(file, config) {
+            // Mock CSV parsing with sample data
+            const mockData = [
+              { TEHINGUPÄEV: '2024-10-30', SÜMBOL: 'XAD5', VÄRTPABER: 'db Physical Gold ETC (EUR)', 
+                VALUUTA: 'EUR', KOGUS: '0.080', HIND: '247.66', NETOSUMMA: '-19.80', TEENUSTASU: '-0.20' },
+              { TEHINGUPÄEV: '2024-10-30', SÜMBOL: 'XAD6', VÄRTPABER: 'Xtrackers Physical Silver ETC EUR', 
+                VALUUTA: 'EUR', KOGUS: '0.067', HIND: '296.60', NETOSUMMA: '-19.80', TEENUSTASU: '-0.20' }
+            ];
+            setTimeout(() => config.complete({ data: mockData }), 100);
+          }
+        };
+        
+        // Mock XLSX
+        global.window.XLSX = {
+          utils: {
+            aoa_to_sheet: () => ({}),
+            book_new: () => ({}),
+            book_append_sheet: () => {}
+          },
+          writeFile: () => {}
+        };
+        
+        // Run tests
+        setTimeout(() => {
+          try {
+            const converter = new global.window.InvestmentConverter();
+            
+            // Test 1: Static symbol database
+            console.log('🧪 Testing static symbol database...');
+            const staticTests = [
+              { symbol: 'BTC', expected: 'Crypto' },
+              { symbol: 'AAPL', expected: 'Stock' },
+              { symbol: 'SPY', expected: 'ETF' },
+              { symbol: 'TLT', expected: 'Bond' }
+            ];
+            
+            let passed = 0;
+            staticTests.forEach(test => {
+              const result = converter.symbolDatabase[test.symbol];
+              if (result && result.type === test.expected) {
+                console.log(`✅ ${test.symbol}: ${test.expected}`);
+                passed++;
+              } else {
+                console.log(`❌ ${test.symbol}: Expected ${test.expected}, Got ${result?.type}`);
+              }
+            });
+            
+            // Test 2: Account name extraction
+            console.log('🧪 Testing account name extraction...');
+            const testFileName = 'LHV_2025_Metallid.csv';
+            const expectedAccount = 'LHV';
+            const actualAccount = testFileName.replace(/\.[^/.]+$/, '').split('_')[0];
+            
+            if (actualAccount === expectedAccount) {
+              console.log(`✅ Account extraction: ${expectedAccount}`);
+              passed++;
+            } else {
+              console.log(`❌ Account extraction: Expected ${expectedAccount}, Got ${actualAccount}`);
+            }
+            
+            // Test 3: Pattern recognition
+            console.log('🧪 Testing pattern recognition...');
+            const patternTests = [
+              { symbol: 'UNKNOWN1', expected: 'Stock' },
+              { symbol: 'SPY ETF', expected: 'ETF' },
+              { symbol: 'US_TREASURY', expected: 'Bond' }
+            ];
+            
+            patternTests.forEach(test => {
+              const result = converter.detectSymbolTypeByPattern(test.symbol);
+              if (result === test.expected) {
+                console.log(`✅ Pattern ${test.symbol}: ${test.expected}`);
+                passed++;
+              } else {
+                console.log(`❌ Pattern ${test.symbol}: Expected ${test.expected}, Got ${result}`);
+              }
+            });
+            
+            // Test 4: File processing simulation
+            console.log('🧪 Testing file processing...');
+            const mockFile = new Blob(['test'], { type: 'text/csv' });
+            mockFile.name = 'LHV_2025_Metallid.csv';
+            
+            converter.parseFile(mockFile).then(transactions => {
+              if (transactions.length > 0) {
+                console.log(`✅ File processing: ${transactions.length} transactions`);
+                passed++;
+                
+                // Test account name in processed data
+                if (transactions[0].Account === 'LHV') {
+                  console.log(`✅ Processed account name: LHV`);
+                  passed++;
+                } else {
+                  console.log(`❌ Processed account name: Expected LHV, Got ${transactions[0].Account}`);
+                }
+              } else {
+                console.log('❌ File processing: No transactions processed');
+              }
+              
+              const totalTests = staticTests.length + 1 + patternTests.length + 2;
+              console.log(`\n📊 Test Results: ${passed}/${totalTests} passed`);
+              
+              if (passed === totalTests) {
+                console.log('✅ All tests passed!');
+                process.exit(0);
+              } else {
+                console.log(`❌ ${totalTests - passed} tests failed`);
+                process.exit(1);
+              }
+            }).catch(error => {
+              console.error('❌ File processing failed:', error.message);
+              process.exit(1);
+            });
+            
+          } catch (error) {
+            console.error('❌ Test setup failed:', error.message);
+            process.exit(1);
+          }
+        }, 1000);
+        EOF
+        
+        # Install jsdom for DOM simulation
+        npm install jsdom
+        
+        # Run the tests
+        node test-ci.js
+        
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: test-results/
+        retention-days: 7
+
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    needs: test
+    name: Build and Deploy
+    
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Pages
+      uses: actions/configure-pages@v4
+      
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: '.'
+        
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
