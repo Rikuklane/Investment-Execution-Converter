@@ -16,6 +16,7 @@ declare global {
             };
             writeFile: (workbook: any, filename: string) => void;
         };
+        converter: any;
     }
 }
 

@@ -23,7 +23,7 @@ class TestRunner {
               <div id="testResults"></div>
               <textarea id="cryptoSymbols">BTC,ETH</textarea>
               <textarea id="stockSymbols">AAPL,MSFT</textarea>
-              <script src="../app.js"></script>
+              <script src="../app-test.js"></script>
             </body>
           </html>
         `, { runScripts: "dangerously", resources: "usable" });
@@ -68,10 +68,13 @@ class TestRunner {
     async run() {
         console.log('🧪 Running Investment Converter Tests...\n');
         
+        // Load the converter directly
+        const InvestmentConverter = require(path.join(__dirname, 'app.test.js'));
+        
         // Wait for app to load
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        const converter = new global.window.InvestmentConverter();
+        const converter = new InvestmentConverter();
         
         for (const test of this.tests) {
             try {

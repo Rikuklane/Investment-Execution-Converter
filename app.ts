@@ -45,6 +45,7 @@ class InvestmentConverter {
         this.loadSymbolDatabase();
         this.initializeEventListeners();
         this.setupDefaultMappings();
+        this.loadAdditionalSymbolMappings();
     }
 
     private initializeEventListeners(): void {
@@ -86,70 +87,34 @@ class InvestmentConverter {
         stockSymbols.addEventListener('input', () => this.updateSymbolMappings());
     }
 
-    private initializeStaticSymbolDatabase(): void {
-        // Comprehensive static symbol database
-        const staticSymbols: { [key: string]: 'Stock' | 'Crypto' | 'ETF' | 'Bond' | 'Other' } = {
-            // Major Cryptocurrencies
-            'BTC': 'Crypto', 'ETH': 'Crypto', 'BNB': 'Crypto', 'XRP': 'Crypto', 'ADA': 'Crypto',
-            'SOL': 'Crypto', 'DOGE': 'Crypto', 'DOT': 'Crypto', 'MATIC': 'Crypto', 'SHIB': 'Crypto',
-            'AVAX': 'Crypto', 'LINK': 'Crypto', 'UNI': 'Crypto', 'ATOM': 'Crypto', 'LTC': 'Crypto',
-            'BCH': 'Crypto', 'XLM': 'Crypto', 'VET': 'Crypto', 'FIL': 'Crypto', 'TRX': 'Crypto',
-            'ETC': 'Crypto', 'XMR': 'Crypto', 'THETA': 'Crypto', 'ICP': 'Crypto', 'EOS': 'Crypto',
-            
-            // Major Stocks (Tech)
-            'AAPL': 'Stock', 'MSFT': 'Stock', 'GOOGL': 'Stock', 'GOOG': 'Stock', 'AMZN': 'Stock',
-            'META': 'Stock', 'TSLA': 'Stock', 'NVDA': 'Stock', 'NFLX': 'Stock', 'DIS': 'Stock',
-            'ADBE': 'Stock', 'CRM': 'Stock', 'INTC': 'Stock', 'AMD': 'Stock', 'CSCO': 'Stock',
-            'PEP': 'Stock', 'COST': 'Stock', 'AVGO': 'Stock', 'TXN': 'Stock', 'QCOM': 'Stock',
-            'TMUS': 'Stock', 'AMAT': 'Stock', 'SBUX': 'Stock', 'INTU': 'Stock',
-            
-            // Major Stocks (Finance)
-            'JPM': 'Stock', 'BAC': 'Stock', 'WFC': 'Stock', 'GS': 'Stock', 'MS': 'Stock',
-            'C': 'Stock', 'AXP': 'Stock', 'BLK': 'Stock', 'SPGI': 'Stock', 'V': 'Stock',
-            'MA': 'Stock', 'PLTR': 'Stock', 'COIN': 'Stock',
-            
-            // Major Stocks (Healthcare)
-            'JNJ': 'Stock', 'PFE': 'Stock', 'UNH': 'Stock', 'ABBV': 'Stock', 'TMO': 'Stock',
-            'ABT': 'Stock', 'MRK': 'Stock', 'DHR': 'Stock', 'BMY': 'Stock', 'AMGN': 'Stock',
-            'GILD': 'Stock', 'CVS': 'Stock', 'CI': 'Stock', 'BIIB': 'Stock', 'MRNA': 'Stock',
-            
-            // Major Stocks (Energy)
-            'XOM': 'Stock', 'CVX': 'Stock', 'COP': 'Stock', 'EOG': 'Stock', 'SLB': 'Stock',
-            'HAL': 'Stock', 'PSX': 'Stock', 'VLO': 'Stock', 'MPC': 'Stock', 'OXY': 'Stock',
-            
-            // Major ETFs
-            'SPY': 'ETF', 'QQQ': 'ETF', 'VTI': 'ETF', 'VOO': 'ETF', 'IVV': 'ETF',
-            'GLD': 'ETF', 'SLV': 'ETF', 'HYG': 'ETF', 'LQD': 'ETF', 'AGG': 'ETF',
-            'BND': 'ETF', 'VT': 'ETF', 'VEA': 'ETF', 'VWO': 'ETF', 'IEMG': 'ETF',
-            'EFA': 'ETF', 'EEM': 'ETF', 'XLF': 'ETF', 'XLE': 'ETF', 'XLK': 'ETF',
-            'XLI': 'ETF', 'XLV': 'ETF', 'XLU': 'ETF', 'XLP': 'ETF', 'XLY': 'ETF',
-            'XLB': 'ETF', 'XLC': 'ETF', 'XLRE': 'ETF', 'GDX': 'ETF', 'USO': 'ETF',
-            'DBC': 'ETF', 'QQQM': 'ETF', 'SPYI': 'ETF', 'SCHD': 'ETF',
-            
-            // Bond-related symbols
-            'TLT': 'Bond', 'IEF': 'Bond', 'SHY': 'Bond', 'JNK': 'Bond', 'MUB': 'Bond', 'VTEB': 'Bond',
-            
-            // Additional common symbols
-            'BRK.A': 'Stock', 'BRK.B': 'Stock', 'WMT': 'Stock', 'HD': 'Stock', 'KO': 'Stock',
-            'MCD': 'Stock', 'NKE': 'Stock', 'UBER': 'Stock', 'LYFT': 'Stock', 'ROKU': 'Stock',
-            'SNAP': 'Stock', 'TWTR': 'Stock', 'ZM': 'Stock', 'DOCU': 'Stock', 'SHOP': 'Stock',
-            'TTWO': 'Stock', 'EA': 'Stock', 'ATVI': 'Stock', 'NTDOY': 'Stock',
-            'SONY': 'Stock', 'TCEHY': 'Stock', 'BABA': 'Stock', 'JD': 'Stock', 'PDD': 'Stock',
-            'NIO': 'Stock', 'XPEV': 'Stock', 'LI': 'Stock', 'RIVN': 'Stock', 'LCID': 'Stock'
-        };
-
-        // Initialize the database with static symbols
-        Object.entries(staticSymbols).forEach(([symbol, type]) => {
-            if (!this.symbolDatabase[symbol]) {
-                this.symbolDatabase[symbol] = {
-                    symbol,
-                    type,
-                    lastUpdated: Date.now()
-                };
+    private async loadAdditionalSymbolMappings(): Promise<void> {
+        try {
+            const response = await fetch('./symbol-mappings.json');
+            if (response.ok) {
+                const mappings = await response.json();
+                
+                // Add static symbol mappings
+                Object.entries(mappings.staticSymbolMappings).forEach(([symbol, type]) => {
+                    if (!this.symbolDatabase[symbol]) {
+                        this.symbolDatabase[symbol] = {
+                            symbol,
+                            type: type as 'Stock' | 'Crypto' | 'ETF' | 'Bond' | 'Other',
+                            lastUpdated: Date.now()
+                        };
+                    }
+                });
+                
+                this.saveSymbolDatabase();
+                console.log(`Loaded ${Object.keys(mappings.staticSymbolMappings).length} additional symbol mappings`);
             }
-        });
+        } catch (error) {
+            console.warn('Could not load additional symbol mappings:', error);
+        }
+    }
 
-        this.saveSymbolDatabase();
+    private initializeStaticSymbolDatabase(): void {
+        // Static symbols are now loaded from symbol-mappings.json
+        // This method is kept for compatibility but the database is populated by loadAdditionalSymbolMappings()
     }
 
     private updateSymbolMappings(): void {
@@ -535,4 +500,7 @@ class InvestmentConverter {
 let converter: InvestmentConverter;
 document.addEventListener('DOMContentLoaded', () => {
     converter = new InvestmentConverter();
+    // Expose to global scope for testing
+    (window as any).InvestmentConverter = InvestmentConverter;
+    (window as any).converter = converter;
 });

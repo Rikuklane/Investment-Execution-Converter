@@ -4,8 +4,10 @@
   "description": "Convert CSV investment files to unified Excel format",
   "main": "app.js",
   "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
     "test": "node tests/test-runner.js",
-    "test:ci": "node tests/test-ci.js"
+    "test:ci": "node tests/test-runner.js"
   },
   "keywords": [
     "investment",
@@ -17,6 +19,7 @@
   "author": "Richard Kuklane",
   "license": "MIT",
   "devDependencies": {
+    "typescript": "^5.0.0",
     "jsdom": "^22.1.0",
     "papaparse": "^5.4.1",
     "xlsx": "^0.18.5"
