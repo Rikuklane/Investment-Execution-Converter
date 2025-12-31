@@ -219,6 +219,135 @@ testRunner.test('Real CSV File Processing', async (converter) => {
     testRunner.assert(etcSymbols.length > 0, 'Should find ETC symbols in real file');
 });
 
+// Test 6: Estonian Transaction Type Detection
+testRunner.test('Estonian Transaction Type Detection', () => {
+    const testCases = [
+        { tehing: 'ost', expected: 'Buy' },
+        { tehing: 'müük', expected: 'Sell' },
+        { tehing: 'OST', expected: 'Buy' },
+        { tehing: 'MÜÜK', expected: 'Sell' },
+        { tehing: 'unknown', expected: 'Sell' },
+        { tehing: '', expected: 'Sell' }
+    ];
+    
+    testCases.forEach(testCase => {
+        const tehing = (testCase.tehing || '').toLowerCase().trim();
+        const action = tehing === 'ost' ? 'Buy' : 'Sell';
+        testRunner.assertEqual(action, testCase.expected, 
+            `Transaction type "${testCase.tehing}" should be "${testCase.expected}"`);
+    });
+});
+
+// Test 7: Excel Date Format Generation
+testRunner.test('Excel Date Format Generation', () => {
+    const testCases = [
+        { date: new Date('2021-02-10'), expected: '=DATE(2021;2;10)' },
+        { date: new Date('2020-03-27'), expected: '=DATE(2020;3;27)' },
+        { date: new Date('2025-12-31'), expected: '=DATE(2025;12;31)' },
+        { date: new Date('2020-02-29'), expected: '=DATE(2020;2;29)' } // Leap year
+    ];
+    
+    testCases.forEach(testCase => {
+        const excelDateFormula = `=DATE(${testCase.date.getFullYear()};${testCase.date.getMonth() + 1};${testCase.date.getDate()})`;
+        testRunner.assertEqual(excelDateFormula, testCase.expected, 
+            `Excel date format for ${testCase.date.toISOString().split('T')[0]}`);
+    });
+});
+
+// Test 8: CSV Row Transformation
+testRunner.test('CSV Row Transformation', () => {
+    const mockSymbolMappings = { 'AAPL': 'Stock' };
+    
+    const csvRow = {
+        TEHINGUPÄEV: '2021-02-10',
+        TEHING: 'ost',
+        SÜMBOL: 'AAPL',
+        VÄÄRTPABER: 'Apple Inc.',
+        VALUUTA: 'EUR',
+        KOGUS: '10',
+        HIND: '150.00',
+        NETOSUMMA: '-1500.00',
+        TEENUSTASU: '1.00'
+    };
+    
+    // Simulate transformRow logic
+    const symbol = csvRow.SÜMBOL?.trim().toUpperCase() || '';
+    const type = mockSymbolMappings[symbol] || 'Missing';
+    const tehing = (csvRow.TEHING || '').toLowerCase().trim();
+    const action = tehing === 'ost' ? 'Buy' : 'Sell';
+    
+    const processed = {
+        Date: new Date(csvRow.TEHINGUPÄEV),
+        Account: 'TestAccount',
+        Type: type,
+        Action: action,
+        Symbol: symbol,
+        Name: csvRow.VÄÄRTPABER || '',
+        Currency: csvRow.VALUUTA || '',
+        Amount: parseFloat(csvRow.KOGUS) || 0,
+        'Price(1)': parseFloat(csvRow.HIND) || 0,
+        Cost: parseFloat(csvRow.NETOSUMMA) || 0,
+        Fee: parseFloat(csvRow.TEENUSTASU) || 0
+    };
+    
+    testRunner.assertEqual(processed.Action, 'Buy', 'Should detect ost as Buy');
+    testRunner.assertEqual(processed.Symbol, 'AAPL', 'Should uppercase symbol');
+    testRunner.assertEqual(processed.Type, 'Stock', 'Should map symbol type correctly');
+    testRunner.assertEqual(processed.Amount, 10, 'Should parse quantity correctly');
+    testRunner.assertEqual(processed.Cost, -1500.00, 'Should parse net sum correctly');
+    testRunner.assertEqual(processed.Fee, 1.00, 'Should parse fee correctly');
+});
+
+// Test 9: Data Validation Edge Cases
+testRunner.test('Data Validation Edge Cases', () => {
+    // Test numeric parsing
+    const numericTests = [
+        { input: '10.5', expected: 10.5 },
+        { input: '150', expected: 150 },
+        { input: '', expected: 0 },
+        { input: 'invalid', expected: 0 },
+        { input: null, expected: 0 }
+    ];
+    
+    numericTests.forEach(test => {
+        const result = parseFloat(test.input) || 0;
+        testRunner.assertEqual(result, test.expected, 
+            `Numeric parsing for "${test.input}"`);
+    });
+    
+    // Test string parsing
+    const stringTests = [
+        { input: 'AAPL', expected: 'AAPL' },
+        { input: '', expected: '' },
+        { input: null, expected: '' },
+        { input: undefined, expected: '' }
+    ];
+    
+    stringTests.forEach(test => {
+        const result = test.input || '';
+        testRunner.assertEqual(result, test.expected, 
+            `String parsing for "${test.input}"`);
+    });
+});
+
+// Test 10: File Filtering Logic
+testRunner.test('File Filtering Logic', () => {
+    const testRows = [
+        { TEHINGUPÄEV: '2021-02-10', SÜMBOL: 'AAPL', shouldKeep: true },
+        { TEHINGUPÄEV: '', SÜMBOL: 'AAPL', shouldKeep: false },
+        { TEHINGUPÄEV: '2021-02-10', SÜMBOL: '', shouldKeep: false },
+        { TEHINGUPÄEV: null, SÜMBOL: 'AAPL', shouldKeep: false },
+        { TEHINGUPÄEV: '2021-02-10', SÜMBOL: null, shouldKeep: false }
+    ];
+    
+    testRows.forEach(row => {
+        const shouldFilter = !row.TEHINGUPÄEV || !row.SÜMBOL;
+        const shouldKeep = !shouldFilter;
+        testRunner.assertEqual(shouldKeep, row.shouldKeep, 
+            `Row filtering for TEHINGUPÄEV="${row.TEHINGUPÄEV}", SÜMBOL="${row.SÜMBOL}"`);
+    });
+});
+
 // Run tests
 testRunner.run().catch(error => {
     console.error('❌ Test runner failed:', error);

@@ -194,14 +194,19 @@ const SYMBOL_MAPPINGS = {
 };
 
 interface TransactionRow {
+    VÄÄRTUSPÄEV: string;
     TEHINGUPÄEV: string;
+    TEHING: string;
     SÜMBOL: string;
     VÄÄRTPABER: string;
-    VALUUTA: string;
     KOGUS: string;
     HIND: string;
+    VALUUTA: string;
     NETOSUMMA: string;
     TEENUSTASU: string;
+    KOKKU: string;
+    VIIDE: string;
+    KOMMENTAAR: string;
 }
 
 interface ProcessedTransaction {
@@ -531,11 +536,14 @@ class InvestmentConverter {
                         // Extract account name from first part of filename before underscore
                         const fileNameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
                         const accountName = fileNameWithoutExt.split('_')[0];
-                        const action = accountName.toLowerCase().includes('buy') ? 'Buy' : 'Sell';
-                        
                         const transactions: ProcessedTransaction[] = results.data
                             .filter((row: any) => row.TEHINGUPÄEV && row.SÜMBOL) // Filter out empty rows
-                            .map((row: TransactionRow) => this.transformRow(row, accountName, action));
+                            .map((row: any) => {
+                                // Determine action based on Estonian TEHING column
+                                const tehing = (row.TEHING || '').toLowerCase().trim();
+                                const action = tehing === 'ost' ? 'Buy' : 'Sell';
+                                return this.transformRow(row, accountName, action);
+                            });
                         
                         resolve(transactions);
                     } catch (error: any) {
@@ -547,7 +555,7 @@ class InvestmentConverter {
         });
     }
 
-    private transformRow(row: TransactionRow, accountName: string, action: string): ProcessedTransaction {
+    private transformRow(row: any, accountName: string, action: string): ProcessedTransaction {
         const symbol = row.SÜMBOL?.trim().toUpperCase() || '';
         const type = this.symbolTypeMapping[symbol] || 'Missing';
         
@@ -617,8 +625,10 @@ class InvestmentConverter {
         ];
 
         this.processedData.forEach(transaction => {
+            const date = transaction.Date;
+            const excelDateFormula = `=DATE(${date.getFullYear()};${date.getMonth() + 1};${date.getDate()})`;
             ws_data.push([
-                transaction.Date.toLocaleDateString(),
+                excelDateFormula,
                 transaction.Account,
                 transaction.Type,
                 transaction.Action,
