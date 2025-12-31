@@ -1,7 +1,202 @@
+// Symbol mappings - all symbols and their types
+const SYMBOL_MAPPINGS = {
+    "APG1L": "Stock",
+    "ARC1T": "Stock",
+    "BRKB": "Stock",
+    "CPA1T": "Stock",
+    "DGRB100028A": "Bond",
+    "ECAR": "ETF",
+    "EGR1T": "Stock",
+    "ESP0": "ETF",
+    "EXSA": "ETF",
+    "EXXT": "ETF",
+    "GREG100027A": "Bond",
+    "HAE1T": "Stock",
+    "HAGEN": "Stock",
+    "HAGENBHT2": "Stock",
+    "INRG": "ETF",
+    "LHV01SR": "Stock",
+    "LHV1T": "Stock",
+    "LHVB105033A": "Bond",
+    "LHVST": "Stock",
+    "MAGIC": "Stock",
+    "MRK1T": "Stock",
+    "NCN1T": "Stock",
+    "NHCBHFFT": "ETF",
+    "SABB077034A": "Bond",
+    "SPYD": "ETF",
+    "STOH100026A": "Bond",
+    "SXR8": "ETF",
+    "TAL11": "Stock",
+    "TAL1T": "Stock",
+    "TKM1T": "Stock",
+    "TSM1T": "Stock",
+    "TVE1T": "Stock",
+    "WISE": "Stock",
+    "XAD5": "ETF",
+    "XAD6": "ETF",
+    "BTC": "Crypto",
+    "ETH": "Crypto",
+    "BNB": "Crypto",
+    "XRP": "Crypto",
+    "ADA": "Crypto",
+    "SOL": "Crypto",
+    "DOGE": "Crypto",
+    "DOT": "Crypto",
+    "MATIC": "Crypto",
+    "SHIB": "Crypto",
+    "AVAX": "Crypto",
+    "LINK": "Crypto",
+    "UNI": "Crypto",
+    "ATOM": "Crypto",
+    "LTC": "Crypto",
+    "BCH": "Crypto",
+    "XLM": "Crypto",
+    "VET": "Crypto",
+    "FIL": "Crypto",
+    "TRX": "Crypto",
+    "ETC": "Crypto",
+    "XMR": "Crypto",
+    "THETA": "Crypto",
+    "ICP": "Crypto",
+    "EOS": "Crypto",
+    "AAPL": "Stock",
+    "MSFT": "Stock",
+    "GOOGL": "Stock",
+    "GOOG": "Stock",
+    "AMZN": "Stock",
+    "META": "Stock",
+    "TSLA": "Stock",
+    "NVDA": "Stock",
+    "NFLX": "Stock",
+    "DIS": "Stock",
+    "ADBE": "Stock",
+    "CRM": "Stock",
+    "INTC": "Stock",
+    "AMD": "Stock",
+    "CSCO": "Stock",
+    "PEP": "Stock",
+    "COST": "Stock",
+    "AVGO": "Stock",
+    "TXN": "Stock",
+    "QCOM": "Stock",
+    "TMUS": "Stock",
+    "AMAT": "Stock",
+    "SBUX": "Stock",
+    "INTU": "Stock",
+    "JPM": "Stock",
+    "BAC": "Stock",
+    "WFC": "Stock",
+    "GS": "Stock",
+    "MS": "Stock",
+    "C": "Stock",
+    "AXP": "Stock",
+    "BLK": "Stock",
+    "SPGI": "Stock",
+    "V": "Stock",
+    "MA": "Stock",
+    "PLTR": "Stock",
+    "COIN": "Stock",
+    "JNJ": "Stock",
+    "PFE": "Stock",
+    "UNH": "Stock",
+    "ABBV": "Stock",
+    "TMO": "Stock",
+    "ABT": "Stock",
+    "MRK": "Stock",
+    "DHR": "Stock",
+    "BMY": "Stock",
+    "AMGN": "Stock",
+    "GILD": "Stock",
+    "CVS": "Stock",
+    "CI": "Stock",
+    "BIIB": "Stock",
+    "MRNA": "Stock",
+    "XOM": "Stock",
+    "CVX": "Stock",
+    "COP": "Stock",
+    "EOG": "Stock",
+    "SLB": "Stock",
+    "HAL": "Stock",
+    "PSX": "Stock",
+    "VLO": "Stock",
+    "MPC": "Stock",
+    "OXY": "Stock",
+    "SPY": "ETF",
+    "QQQ": "ETF",
+    "VTI": "ETF",
+    "VOO": "ETF",
+    "IVV": "ETF",
+    "GLD": "ETF",
+    "SLV": "ETF",
+    "HYG": "ETF",
+    "LQD": "ETF",
+    "AGG": "ETF",
+    "BND": "ETF",
+    "VT": "ETF",
+    "VEA": "ETF",
+    "VWO": "ETF",
+    "IEMG": "ETF",
+    "EFA": "ETF",
+    "EEM": "ETF",
+    "XLF": "ETF",
+    "XLE": "ETF",
+    "XLK": "ETF",
+    "XLI": "ETF",
+    "XLV": "ETF",
+    "XLU": "ETF",
+    "XLP": "ETF",
+    "XLY": "ETF",
+    "XLB": "ETF",
+    "XLC": "ETF",
+    "XLRE": "ETF",
+    "GDX": "ETF",
+    "USO": "ETF",
+    "DBC": "ETF",
+    "QQQM": "ETF",
+    "SPYI": "ETF",
+    "SCHD": "ETF",
+    "TLT": "Bond",
+    "IEF": "Bond",
+    "SHY": "Bond",
+    "JNK": "Bond",
+    "MUB": "Bond",
+    "VTEB": "Bond",
+    "BRK.A": "Stock",
+    "BRK.B": "Stock",
+    "WMT": "Stock",
+    "HD": "Stock",
+    "KO": "Stock",
+    "MCD": "Stock",
+    "NKE": "Stock",
+    "UBER": "Stock",
+    "LYFT": "Stock",
+    "ROKU": "Stock",
+    "SNAP": "Stock",
+    "TWTR": "Stock",
+    "ZM": "Stock",
+    "DOCU": "Stock",
+    "SHOP": "Stock",
+    "TTWO": "Stock",
+    "EA": "Stock",
+    "ATVI": "Stock",
+    "NTDOY": "Stock",
+    "SONY": "Stock",
+    "TCEHY": "Stock",
+    "BABA": "Stock",
+    "JD": "Stock",
+    "PDD": "Stock",
+    "NIO": "Stock",
+    "XPEV": "Stock",
+    "LI": "Stock",
+    "RIVN": "Stock",
+    "LCID": "Stock"
+};
+
 interface TransactionRow {
     TEHINGUPÄEV: string;
     SÜMBOL: string;
-    VÄRTPABER: string;
+    VÄÄRTPABER: string;
     VALUUTA: string;
     KOGUS: string;
     HIND: string;
@@ -25,7 +220,7 @@ interface ProcessedTransaction {
 
 interface SymbolInfo {
     symbol: string;
-    type: 'Stock' | 'Crypto' | 'ETF' | 'Bond' | 'Other';
+    type: 'Stock' | 'Crypto' | 'ETF' | 'Bond' | 'Missing';
     name?: string;
     lastUpdated: number;
 }
@@ -39,12 +234,12 @@ class InvestmentConverter {
     private symbolTypeMapping: { [key: string]: string } = {};
     private processedData: ProcessedTransaction[] = [];
     private symbolDatabase: SymbolDatabase = {};
+    private unknownSymbols: string[] = [];
     private readonly DB_KEY = 'investment_symbol_database';
 
     constructor() {
         this.loadSymbolDatabase();
         this.initializeEventListeners();
-        this.setupDefaultMappings();
         this.loadAdditionalSymbolMappings();
     }
 
@@ -57,6 +252,10 @@ class InvestmentConverter {
         fileInput.addEventListener('change', (e) => this.handleFileSelect(e));
         processBtn.addEventListener('click', () => this.processFiles());
         exportBtn.addEventListener('click', () => this.exportToExcel());
+
+        // Modal event listeners
+        document.getElementById('cancelClassification')?.addEventListener('click', () => this.closeClassificationModal());
+        document.getElementById('saveClassification')?.addEventListener('click', () => this.saveClassification());
 
         // Drag and drop functionality
         dropZone.addEventListener('dragover', (e) => {
@@ -75,76 +274,27 @@ class InvestmentConverter {
         });
     }
 
-    private setupDefaultMappings(): void {
-        this.initializeStaticSymbolDatabase();
-        this.updateSymbolMappings();
-        
-        // Update mappings when text changes
-        const cryptoSymbols = document.getElementById('cryptoSymbols') as HTMLTextAreaElement;
-        const stockSymbols = document.getElementById('stockSymbols') as HTMLTextAreaElement;
-        
-        cryptoSymbols.addEventListener('input', () => this.updateSymbolMappings());
-        stockSymbols.addEventListener('input', () => this.updateSymbolMappings());
-    }
-
     private async loadAdditionalSymbolMappings(): Promise<void> {
         try {
-            const response = await fetch('./symbol-mappings.json');
-            if (response.ok) {
-                const mappings = await response.json();
-                
-                // Add static symbol mappings
-                Object.entries(mappings.staticSymbolMappings).forEach(([symbol, type]) => {
-                    if (!this.symbolDatabase[symbol]) {
-                        this.symbolDatabase[symbol] = {
-                            symbol,
-                            type: type as 'Stock' | 'Crypto' | 'ETF' | 'Bond' | 'Other',
-                            lastUpdated: Date.now()
-                        };
-                    }
-                });
-                
-                this.saveSymbolDatabase();
-                console.log(`Loaded ${Object.keys(mappings.staticSymbolMappings).length} additional symbol mappings`);
-            }
+            // Use the imported symbol mappings
+            this.symbolTypeMapping = { ...SYMBOL_MAPPINGS };
+            
+            // Also add to symbol database for persistence
+            Object.entries(SYMBOL_MAPPINGS).forEach(([symbol, type]) => {
+                if (!this.symbolDatabase[symbol]) {
+                    this.symbolDatabase[symbol] = {
+                        symbol,
+                        type: type as 'Stock' | 'Crypto' | 'ETF' | 'Bond' | 'Missing',
+                        lastUpdated: Date.now()
+                    };
+                }
+            });
+            
+            this.saveSymbolDatabase();
+            console.log(`Loaded ${Object.keys(SYMBOL_MAPPINGS).length} symbol mappings`);
         } catch (error) {
-            console.warn('Could not load additional symbol mappings:', error);
+            console.warn('Error loading symbol mappings:', error);
         }
-    }
-
-    private initializeStaticSymbolDatabase(): void {
-        // Static symbols are now loaded from symbol-mappings.json
-        // This method is kept for compatibility but the database is populated by loadAdditionalSymbolMappings()
-    }
-
-    private updateSymbolMappings(): void {
-        const cryptoSymbols = (document.getElementById('cryptoSymbols') as HTMLTextAreaElement).value
-            .split(',')
-            .map(s => s.trim().toUpperCase())
-            .filter(s => s);
-        
-        const stockSymbols = (document.getElementById('stockSymbols') as HTMLTextAreaElement).value
-            .split(',')
-            .map(s => s.trim().toUpperCase())
-            .filter(s => s);
-
-        this.symbolTypeMapping = {};
-        
-        // Add manual mappings
-        cryptoSymbols.forEach(symbol => {
-            this.symbolTypeMapping[symbol] = 'Crypto';
-        });
-        
-        stockSymbols.forEach(symbol => {
-            this.symbolTypeMapping[symbol] = 'Stock';
-        });
-
-        // Add database mappings
-        Object.values(this.symbolDatabase).forEach(info => {
-            if (!this.symbolTypeMapping[info.symbol]) {
-                this.symbolTypeMapping[info.symbol] = info.type;
-            }
-        });
     }
 
     private handleFileSelect(event: Event): void {
@@ -213,60 +363,96 @@ class InvestmentConverter {
     }
 
     private async detectSymbolTypes(symbols: string[]): Promise<void> {
-        const unknownSymbols = symbols.filter(symbol => 
-            !this.symbolDatabase[symbol] && 
-            !this.symbolTypeMapping[symbol]
+        // Find unknown symbols
+        this.unknownSymbols = symbols.filter(symbol => 
+            !this.symbolTypeMapping[symbol.toUpperCase()]
         );
 
-        if (unknownSymbols.length === 0) return;
+        if (this.unknownSymbols.length > 0) {
+            // Show modal for user to classify unknown symbols
+            await this.showClassificationModal();
+        }
+    }
 
-        // Try to detect using common patterns first
-        unknownSymbols.forEach(symbol => {
-            const detectedType = this.detectSymbolTypeByPattern(symbol);
-            if (detectedType) {
-                this.symbolDatabase[symbol] = {
-                    symbol,
-                    type: detectedType,
+    private showClassificationModal(): Promise<void> {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('classificationModal')!;
+            const symbolsList = document.getElementById('unknownSymbolsList')!;
+            
+            // Clear previous content
+            symbolsList.innerHTML = '';
+            
+            // Create classification UI for each unknown symbol
+            this.unknownSymbols.forEach(symbol => {
+                const symbolDiv = document.createElement('div');
+                symbolDiv.className = 'flex items-center justify-between p-3 bg-gray-50 rounded-lg';
+                symbolDiv.innerHTML = `
+                    <div class="flex items-center">
+                        <span class="font-mono font-semibold text-gray-800">${symbol}</span>
+                    </div>
+                    <select class="symbol-type-select px-3 py-2 border rounded-lg" data-symbol="${symbol}">
+                        <option value="">Select type...</option>
+                        <option value="Stock">Stock</option>
+                        <option value="Crypto">Crypto</option>
+                        <option value="ETF">ETF</option>
+                        <option value="Bond">Bond</option>
+                        <option value="Missing">Missing</option>
+                    </select>
+                `;
+                symbolsList.appendChild(symbolDiv);
+            });
+            
+            // Show modal
+            modal.classList.remove('hidden');
+            
+            // Store resolve function to be called when user saves
+            (this as any).classificationResolve = resolve;
+        });
+    }
+
+    private closeClassificationModal(): void {
+        const modal = document.getElementById('classificationModal')!;
+        modal.classList.add('hidden');
+    }
+
+    private saveClassification(): void {
+        const selects = document.querySelectorAll('.symbol-type-select') as NodeListOf<HTMLSelectElement>;
+        
+        selects.forEach(select => {
+            const symbol = select.dataset.symbol!;
+            const type = select.value;
+            
+            if (type) {
+                // Save to mappings
+                this.symbolTypeMapping[symbol.toUpperCase()] = type;
+                
+                // Save to database for persistence
+                this.symbolDatabase[symbol.toUpperCase()] = {
+                    symbol: symbol.toUpperCase(),
+                    type: type as 'Stock' | 'Crypto' | 'ETF' | 'Bond' | 'Missing',
                     lastUpdated: Date.now()
                 };
             }
         });
-
-        // For remaining unknown symbols, try API (limited to avoid rate limits)
-        const stillUnknown = unknownSymbols.filter(symbol => !this.symbolDatabase[symbol]);
-        if (stillUnknown.length > 0) {
-            await this.detectSymbolTypesViaAPI(stillUnknown.slice(0, 10)); // Limit to 10 API calls
-        }
-
+        
         this.saveSymbolDatabase();
-        this.updateSymbolMappings();
+        this.closeClassificationModal();
+        
+        // Resolve the promise to continue processing
+        if ((this as any).classificationResolve) {
+            (this as any).classificationResolve();
+        }
     }
 
-    private detectSymbolTypeByPattern(symbol: string): 'Stock' | 'Crypto' | 'ETF' | 'Bond' | 'Other' | null {
+    private detectSymbolTypeByPattern(symbol: string): 'Stock' | 'Crypto' | 'ETF' | 'Bond' | 'Missing' | null {
         const upperSymbol = symbol.toUpperCase();
         
-        // Common crypto patterns
-        if (['BTC', 'ETH', 'ADA', 'DOT', 'LINK', 'UNI', 'SOL', 'AVAX', 'MATIC', 'ATOM'].includes(upperSymbol)) {
-            return 'Crypto';
+        // Only use predefined mappings - no hardcoded patterns
+        if (this.symbolTypeMapping[upperSymbol]) {
+            return this.symbolTypeMapping[upperSymbol] as 'Stock' | 'Crypto' | 'ETF' | 'Bond' | 'Missing';
         }
         
-        // Common ETF patterns
-        if (upperSymbol.includes('ETF') || upperSymbol.startsWith('VO') || upperSymbol.startsWith('SPY') || 
-            upperSymbol.startsWith('QQQ') || upperSymbol.startsWith('DIA') || upperSymbol.startsWith('VTI')) {
-            return 'ETF';
-        }
-        
-        // Bond patterns
-        if (upperSymbol.includes('BOND') || upperSymbol.includes('TREASURY') || upperSymbol.includes('TBILL')) {
-            return 'Bond';
-        }
-        
-        // Stock patterns (most common)
-        if (upperSymbol.length <= 5 && /^[A-Z]+$/.test(upperSymbol)) {
-            return 'Stock';
-        }
-        
-        return null;
+        return null; // Return null if not found in mappings
     }
 
     private async detectSymbolTypesViaAPI(symbols: string[]): Promise<void> {
@@ -291,34 +477,9 @@ class InvestmentConverter {
         }
     }
 
-    private simulateAPIDetection(symbol: string): 'Stock' | 'Crypto' | 'ETF' | 'Bond' | 'Other' | null {
-        // This is a placeholder for actual API calls
-        // In production, you'd make real API calls to services like:
-        // - Alpha Vantage (free tier available)
-        // - Yahoo Finance API
-        // - CoinGecko API for crypto
-        // - Financial data providers
-        
-        const upperSymbol = symbol.toUpperCase();
-        
-        // More comprehensive crypto detection
-        const cryptoList = ['BTC', 'ETH', 'BNB', 'XRP', 'ADA', 'SOL', 'DOGE', 'DOT', 'MATIC', 'SHIB', 'AVAX', 'LINK', 'UNI', 'ATOM', 'LTC'];
-        if (cryptoList.includes(upperSymbol)) {
-            return 'Crypto';
-        }
-        
-        // ETF detection
-        const etfPatterns = ['SPY', 'QQQ', 'VTI', 'VOO', 'IVV', 'GLD', 'SLV', 'TLT', 'HYG', 'LQD'];
-        if (etfPatterns.includes(upperSymbol)) {
-            return 'ETF';
-        }
-        
-        // Default to Stock for common stock-like symbols
-        if (upperSymbol.length <= 5 && /^[A-Z]+$/.test(upperSymbol)) {
-            return 'Stock';
-        }
-        
-        return 'Other';
+    private simulateAPIDetection(symbol: string): 'Stock' | 'Crypto' | 'ETF' | 'Bond' | 'Missing' | null {
+        // Don't use hardcoded detection - rely only on predefined mappings
+        return null;
     }
 
     private updateProcessButton(): void {
@@ -388,7 +549,7 @@ class InvestmentConverter {
 
     private transformRow(row: TransactionRow, accountName: string, action: string): ProcessedTransaction {
         const symbol = row.SÜMBOL?.trim().toUpperCase() || '';
-        const type = this.symbolTypeMapping[symbol] || 'Other';
+        const type = this.symbolTypeMapping[symbol] || 'Missing';
         
         return {
             Date: new Date(row.TEHINGUPÄEV),
@@ -396,7 +557,7 @@ class InvestmentConverter {
             Type: type,
             Action: action,
             Symbol: symbol,
-            Name: row.VÄRTPABER || '',
+            Name: row.VÄÄRTPABER || '',
             Currency: row.VALUUTA || '',
             Amount: parseFloat(row.KOGUS) || 0,
             'Price(1)': parseFloat(row.HIND) || 0,

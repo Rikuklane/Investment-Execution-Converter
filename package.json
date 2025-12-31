@@ -4,8 +4,9 @@
   "description": "Convert CSV investment files to unified Excel format",
   "main": "app.js",
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
+    "build": "node build.js",
+    "watch": "node build.js watch",
+    "dev": "node build.js watch",
     "test": "node tests/test-runner.js",
     "test:ci": "node tests/test-runner.js"
   },
