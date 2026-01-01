@@ -636,10 +636,10 @@ class InvestmentConverter {
                 transaction.Symbol,
                 transaction.Name,
                 transaction.Currency,
-                transaction.Amount.toString(),
-                transaction['Price(1)'].toString(),
-                transaction.Cost.toString(),
-                transaction.Fee.toString()
+                this.formatEstonianNumber(transaction.Amount),
+                this.formatEstonianNumber(transaction['Price(1)']),
+                this.formatEstonianNumber(transaction.Cost),
+                this.formatEstonianNumber(transaction.Fee)
             ]);
         });
 
@@ -675,6 +675,31 @@ class InvestmentConverter {
         
         // Add 1 because Excel counts 1900-01-01 as day 1, and add 1 more for Excel's leap year bug
         return daysSinceEpoch + 2;
+    }
+
+    private formatEstonianNumber(num: number): string {
+        // Get user's decimal separator preference (default: comma for Estonian)
+        const decimalSeparator = this.getDecimalSeparator();
+        
+        if (decimalSeparator === 'period') {
+            // US/UK format: period decimal, comma thousands
+            return num.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        } else {
+            // Estonian/European format: comma decimal, space thousands
+            return num.toLocaleString('et-EE', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+    }
+
+    private getDecimalSeparator(): 'comma' | 'period' {
+        // Get user selection from radio buttons, default to comma
+        const selected = document.querySelector('input[name="decimalSeparator"]:checked') as HTMLInputElement;
+        return selected?.value === 'period' ? 'period' : 'comma';
     }
 
     private showLoading(show: boolean): void {

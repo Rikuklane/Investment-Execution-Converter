@@ -604,6 +604,90 @@ testRunner.test('Excel Export with Real CSV Data', async (converter) => {
     });
 });
 
+// Test 12: Decimal Separator Settings
+testRunner.test('Decimal Separator Settings', async (converter) => {
+    // Create test data with known numbers
+    converter.processedData = [
+        {
+            Date: new Date('2021-02-10'),
+            Account: 'Test',
+            Type: 'Stock',
+            Action: 'Buy',
+            Symbol: 'TEST',
+            Name: 'Test Stock',
+            Currency: 'EUR',
+            Amount: 75.4,
+            'Price(1)': 150.123,
+            Cost: -1125.5,
+            Fee: 2.1
+        }
+    ];
+    
+    // Test Estonian format (comma) - default
+    let capturedWorkbook = null;
+    const originalWriteFile = global.window.XLSX.writeFile;
+    global.window.XLSX.writeFile = (wb, filename) => {
+        capturedWorkbook = wb;
+    };
+    
+    // Mock radio button selection for comma (default)
+    if (typeof document !== 'undefined') {
+        const commaRadio = document.createElement('input');
+        commaRadio.type = 'radio';
+        commaRadio.name = 'decimalSeparator';
+        commaRadio.value = 'comma';
+        commaRadio.checked = true;
+        document.body.appendChild(commaRadio);
+    }
+    
+    converter.exportToExcel();
+    
+    testRunner.assert(capturedWorkbook !== null, 'Should create Excel workbook with Estonian format');
+    
+    const worksheet = capturedWorkbook.Sheets['Combined Transactions'];
+    const excelData = global.window.XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+    
+    // Check Estonian format (comma decimal separator)
+    testRunner.assertEqual(excelData[1][7], '75,40', 'Amount should use Estonian comma format');
+    testRunner.assertEqual(excelData[1][8], '150,12', 'Price should use Estonian comma format');
+    testRunner.assertEqual(excelData[1][9], '−1125,50', 'Cost should use Estonian comma format with non-breaking hyphen');
+    testRunner.assertEqual(excelData[1][10], '2,10', 'Fee should use Estonian comma format');
+    
+    // Test US/UK format (period)
+    if (typeof document !== 'undefined') {
+        const periodRadio = document.createElement('input');
+        periodRadio.type = 'radio';
+        periodRadio.name = 'decimalSeparator';
+        periodRadio.value = 'period';
+        periodRadio.checked = true;
+        
+        // Replace the comma radio with period radio
+        const existingRadio = document.querySelector('input[name="decimalSeparator"]');
+        if (existingRadio) {
+            document.body.replaceChild(periodRadio, existingRadio);
+        } else {
+            document.body.appendChild(periodRadio);
+        }
+    }
+    
+    capturedWorkbook = null;
+    converter.exportToExcel();
+    
+    testRunner.assert(capturedWorkbook !== null, 'Should create Excel workbook with US/UK format');
+    
+    const worksheet2 = capturedWorkbook.Sheets['Combined Transactions'];
+    const excelData2 = global.window.XLSX.utils.sheet_to_json(worksheet2, { header: 1 });
+    
+    // Check US/UK format (period decimal separator)
+    testRunner.assertEqual(excelData2[1][7], '75.40', 'Amount should use US/UK period format');
+    testRunner.assertEqual(excelData2[1][8], '150.12', 'Price should use US/UK period format');
+    testRunner.assertEqual(excelData2[1][9], '-1,125.50', 'Cost should use US/UK period and comma thousands');
+    testRunner.assertEqual(excelData2[1][10], '2.10', 'Fee should use US/UK period format');
+    
+    // Restore original function
+    global.window.XLSX.writeFile = originalWriteFile;
+});
+
 // Run tests
 testRunner.run().catch(error => {
     console.error('❌ Test runner failed:', error);
