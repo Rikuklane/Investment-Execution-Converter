@@ -648,10 +648,26 @@ testRunner.test('Decimal Separator Settings', async (converter) => {
     const excelData = global.window.XLSX.utils.sheet_to_json(worksheet, { header: 1 });
     
     // Check Estonian format (comma decimal separator)
-    testRunner.assertEqual(excelData[1][7], '75,40', 'Amount should use Estonian comma format');
-    testRunner.assertEqual(excelData[1][8], '150,12', 'Price should use Estonian comma format');
-    testRunner.assertEqual(excelData[1][9], '−1125,50', 'Cost should use Estonian comma format with non-breaking hyphen');
-    testRunner.assertEqual(excelData[1][10], '2,10', 'Fee should use Estonian comma format');
+    testRunner.assertEqual(excelData[1][7].toString(), '75.4', 'Amount should be 75.4');
+    testRunner.assertEqual(excelData[1][8].toString(), '150.123', 'Price should be 150.123');
+    testRunner.assertEqual(excelData[1][9].toString(), '-1125.5', 'Cost should be -1125.5');
+    testRunner.assertEqual(excelData[1][10].toString(), '2.1', 'Fee should be 2.1');
+    
+    // Check cell formatting
+    const amountCell = worksheet['H2'];  // Amount column
+    const priceCell = worksheet['I2'];   // Price column
+    const costCell = worksheet['J2'];    // Cost column
+    const feeCell = worksheet['K2'];     // Fee column
+    
+    testRunner.assertEqual(amountCell.z, undefined, 'Amount cell should have no custom format');
+    testRunner.assertEqual(priceCell.z, undefined, 'Price cell should have no custom format');
+    testRunner.assertEqual(costCell.z, undefined, 'Cost cell should have no custom format');
+    testRunner.assertEqual(feeCell.z, undefined, 'Fee cell should have no custom format');
+    
+    testRunner.assertEqual(amountCell.t, 'n', 'Amount cell should be number type');
+    testRunner.assertEqual(priceCell.t, 'n', 'Price cell should be number type');
+    testRunner.assertEqual(costCell.t, 'n', 'Cost cell should be number type');
+    testRunner.assertEqual(feeCell.t, 'n', 'Fee cell should be number type');
     
     // Test US/UK format (period)
     if (typeof document !== 'undefined') {
@@ -679,10 +695,26 @@ testRunner.test('Decimal Separator Settings', async (converter) => {
     const excelData2 = global.window.XLSX.utils.sheet_to_json(worksheet2, { header: 1 });
     
     // Check US/UK format (period decimal separator)
-    testRunner.assertEqual(excelData2[1][7], '75.40', 'Amount should use US/UK period format');
-    testRunner.assertEqual(excelData2[1][8], '150.12', 'Price should use US/UK period format');
-    testRunner.assertEqual(excelData2[1][9], '-1,125.50', 'Cost should use US/UK period and comma thousands');
-    testRunner.assertEqual(excelData2[1][10], '2.10', 'Fee should use US/UK period format');
+    testRunner.assertEqual(excelData2[1][7].toString(), '75.4', 'Amount should be 75.4');
+    testRunner.assertEqual(excelData2[1][8].toString(), '150.123', 'Price should be 150.123');
+    testRunner.assertEqual(excelData2[1][9].toString(), '-1125.5', 'Cost should be -1125.5');
+    testRunner.assertEqual(excelData2[1][10].toString(), '2.1', 'Fee should be 2.1');
+    
+    // Check cell formatting for US/UK
+    const amountCell2 = worksheet2['H2'];  // Amount column
+    const priceCell2 = worksheet2['I2'];   // Price column
+    const costCell2 = worksheet2['J2'];    // Cost column
+    const feeCell2 = worksheet2['K2'];     // Fee column
+    
+    testRunner.assertEqual(amountCell2.z, undefined, 'Amount cell should have no custom format');
+    testRunner.assertEqual(priceCell2.z, undefined, 'Price cell should have no custom format');
+    testRunner.assertEqual(costCell2.z, undefined, 'Cost cell should have no custom format');
+    testRunner.assertEqual(feeCell2.z, undefined, 'Fee cell should have no custom format');
+    
+    testRunner.assertEqual(amountCell2.t, 'n', 'Amount cell should be number type');
+    testRunner.assertEqual(priceCell2.t, 'n', 'Price cell should be number type');
+    testRunner.assertEqual(costCell2.t, 'n', 'Cost cell should be number type');
+    testRunner.assertEqual(feeCell2.t, 'n', 'Fee cell should be number type');
     
     // Restore original function
     global.window.XLSX.writeFile = originalWriteFile;

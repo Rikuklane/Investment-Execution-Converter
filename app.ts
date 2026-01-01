@@ -618,7 +618,7 @@ class InvestmentConverter {
         if (this.processedData.length === 0) return;
 
         // Convert data to Excel format
-        const ws_data = [
+        const ws_data: (string | number)[][] = [
             ['Date', 'Account', 'Type', 'Action', 'Symbol', 'Name', 'Currency', 'Amount', 'Price(1)', 'Cost', 'Fee']
         ];
 
@@ -634,10 +634,10 @@ class InvestmentConverter {
                 transaction.Symbol,
                 transaction.Name,
                 transaction.Currency,
-                this.formatEstonianNumber(transaction.Amount),
-                this.formatEstonianNumber(transaction['Price(1)']),
-                this.formatEstonianNumber(transaction.Cost),
-                this.formatEstonianNumber(transaction.Fee)
+                transaction.Amount,
+                transaction['Price(1)'],
+                transaction.Cost,
+                transaction.Fee
             ]);
         });
 
@@ -645,16 +645,30 @@ class InvestmentConverter {
         const wb = window.XLSX.utils.book_new();
         window.XLSX.utils.book_append_sheet(wb, ws, 'Combined Transactions');
 
-        // Apply Estonian date format (DD.MM.YYYY) to the date column
+        // Apply Estonian date format (DD.MM.YYYY) to the date column and number formatting to other columns
         if (ws['!ref']) {
             const range = (window.XLSX.utils as any).decode_range(ws['!ref']);
+            const decimalSeparator = this.getDecimalSeparator();
+            
             for (let row = 1; row <= range.e.r; row++) {
-                const cellAddress = (window.XLSX.utils as any).encode_cell({ r: row, c: 0 });
-                if (ws[cellAddress]) {
-                    ws[cellAddress].z = 'dd.mm.yyyy'; // Estonian date format
-                    ws[cellAddress].t = 'n'; // Ensure cell type is number
-                    // Convert back to number for Excel
-                    ws[cellAddress].v = parseFloat(ws[cellAddress].v);
+                // Date column (column A)
+                const dateCellAddress = (window.XLSX.utils as any).encode_cell({ r: row, c: 0 });
+                if (ws[dateCellAddress]) {
+                    ws[dateCellAddress].z = 'dd.mm.yyyy'; // Estonian date format
+                    ws[dateCellAddress].t = 'n'; // Ensure cell type is number
+                    ws[dateCellAddress].v = parseFloat(ws[dateCellAddress].v);
+                }
+                
+                // Number columns (columns H, I, J, K - Amount, Price(1), Cost, Fee)
+                for (let col = 7; col <= 10; col++) {
+                    const cellAddress = (window.XLSX.utils as any).encode_cell({ r: row, c: col });
+                    if (ws[cellAddress]) {
+                        // Convert string back to number for Excel
+                        const numValue = parseFloat(ws[cellAddress].v);
+                        ws[cellAddress].v = numValue;
+                        ws[cellAddress].t = 'n'; // Ensure cell type is number
+                        // No custom formatting - let Excel handle naturally
+                    }
                 }
             }
         }
@@ -679,19 +693,25 @@ class InvestmentConverter {
         // Get user's decimal separator preference (default: comma for Estonian)
         const decimalSeparator = this.getDecimalSeparator();
         
+        let result: string;
         if (decimalSeparator === 'period') {
             // US/UK format: period decimal, comma thousands
-            return num.toLocaleString('en-US', {
+            result = num.toLocaleString('en-US', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
             });
         } else {
             // Estonian/European format: comma decimal, space thousands
-            return num.toLocaleString('et-EE', {
+            result = num.toLocaleString('et-EE', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
             });
+            
+            // Replace non-breaking hyphen (U+2212) with regular minus sign for Excel compatibility
+            result = result.replace(/\u2212/g, '-');
         }
+        
+        return result;
     }
 
     private getDecimalSeparator(): 'comma' | 'period' {
