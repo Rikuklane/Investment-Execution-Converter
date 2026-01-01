@@ -227,7 +227,7 @@ interface SymbolInfo {
     symbol: string;
     type: 'Stock' | 'Crypto' | 'ETF' | 'Bond' | 'Missing';
     name?: string;
-    lastUpdated: number;
+     lastUpdated: number;
 }
 
 interface SymbolDatabase {
@@ -626,9 +626,10 @@ class InvestmentConverter {
 
         this.processedData.forEach(transaction => {
             const date = transaction.Date;
-            const excelDateFormula = `=DATE(${date.getFullYear()};${date.getMonth() + 1};${date.getDate()})`;
+            // Convert to Excel date number (days since 1900-01-01)
+            const excelDateNumber = this.dateToExcelNumber(date);
             ws_data.push([
-                excelDateFormula,
+                excelDateNumber.toString(),
                 transaction.Account,
                 transaction.Type,
                 transaction.Action,
@@ -646,11 +647,34 @@ class InvestmentConverter {
         const wb = window.XLSX.utils.book_new();
         window.XLSX.utils.book_append_sheet(wb, ws, 'Combined Transactions');
 
+        // Apply Estonian date format (DD.MM.YYYY) to the date column
+        if (ws['!ref']) {
+            const range = (window.XLSX.utils as any).decode_range(ws['!ref']);
+            for (let row = 1; row <= range.e.r; row++) {
+                const cellAddress = (window.XLSX.utils as any).encode_cell({ r: row, c: 0 });
+                if (ws[cellAddress]) {
+                    ws[cellAddress].z = 'dd.mm.yyyy'; // Estonian date format
+                    ws[cellAddress].t = 'n'; // Ensure cell type is number
+                    // Convert back to number for Excel
+                    ws[cellAddress].v = parseFloat(ws[cellAddress].v);
+                }
+            }
+        }
+
         // Generate filename with timestamp
         const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
         const filename = `combined_transactions_${timestamp}.xlsx`;
 
         window.XLSX.writeFile(wb, filename);
+    }
+
+    private dateToExcelNumber(date: Date): number {
+        // Excel dates start from 1900-01-01 (but Excel incorrectly treats 1900 as a leap year)
+        const excelEpoch = new Date(1900, 0, 1); // January 1, 1900
+        const daysSinceEpoch = Math.floor((date.getTime() - excelEpoch.getTime()) / (1000 * 60 * 60 * 24));
+        
+        // Add 1 because Excel counts 1900-01-01 as day 1, and add 1 more for Excel's leap year bug
+        return daysSinceEpoch + 2;
     }
 
     private showLoading(show: boolean): void {

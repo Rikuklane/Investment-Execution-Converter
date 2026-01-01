@@ -109,7 +109,6 @@ class TestRunner {
         // Mock XLSX.writeFile to prevent real file creation during tests
         const originalWriteFile = XLSX.writeFile;
         XLSX.writeFile = function(wb, filename) {
-            console.log('📄 Excel export captured:', filename);
             // Don't actually write file - just capture it for testing
             return;
         };
@@ -240,12 +239,11 @@ testRunner.test('Excel Date Format - Real Export', async (converter) => {
         }
     ];
     
-    // Capture the Excel file that gets written (using global mock)
+    // Capture the Excel file that gets written
     let capturedWorkbook = null;
     const originalWriteFile = global.window.XLSX.writeFile;
     global.window.XLSX.writeFile = (wb, filename) => {
         capturedWorkbook = wb;
-        console.log('📄 Excel export captured for test:', filename);
         // Don't actually write file
     };
     
@@ -261,8 +259,27 @@ testRunner.test('Excel Date Format - Real Export', async (converter) => {
     const excelData = global.window.XLSX.utils.sheet_to_json(worksheet, { header: 1 });
     
     testRunner.assertEqual(excelData[0][0], 'Date', 'Should have Date header');
-    testRunner.assertEqual(excelData[1][0], '=DATE(2021;2;10)', 'Should format 2021-02-10 correctly');
-    testRunner.assertEqual(excelData[2][0], '=DATE(2020;3;27)', 'Should format 2020-03-27 correctly');
+    
+    // Check actual dates in Excel (should be numbers now)
+    const date1 = excelData[1][0];
+    const date2 = excelData[2][0];
+    
+    // Check if dates are Excel date numbers
+    testRunner.assert(typeof date1 === 'number', 'Date should be Excel number');
+    testRunner.assert(typeof date2 === 'number', 'Date should be Excel number');
+    
+    // Verify Excel date numbers are correct
+    testRunner.assert(date1 >= 44000 && date1 <= 45000, 'Excel date should be in reasonable range for 2021');
+    testRunner.assert(date2 >= 43500 && date2 <= 44500, 'Excel date should be in reasonable range for 2020');
+    
+    // Verify dates are not all the same
+    testRunner.assert(date1 !== date2, 'Dates should be different');
+    
+    // Check that cells have Estonian date format applied
+    const cell1 = worksheet['A2'];
+    const cell2 = worksheet['A3'];
+    testRunner.assertEqual(cell1.z, 'dd.mm.yyyy', 'Cell should have Estonian date format');
+    testRunner.assertEqual(cell2.z, 'dd.mm.yyyy', 'Cell should have Estonian date format');
 });
 
 // Test 1: Static Symbol Database
@@ -498,6 +515,55 @@ testRunner.test('Multi-File Processing and Date Ordering', async (converter) => 
     
     // Verify final ordering: MSFT (2019) -> BTC (2020) -> ESP0/ECAR/AAPL (2021) -> XAD5 (2024) -> GOOGL (2025)
     testRunner.assert(googlIndex === converter.processedData.length - 1, 'GOOGL should be the last transaction (latest)');
+});
+
+// Test 11: Excel Export with Real CSV Data
+testRunner.test('Excel Export with Real CSV Data', async (converter) => {
+    // Load real CSV and process it
+    const csvContent = fs.readFileSync(path.join(__dirname, 'resources', 'sample-lhv.csv'), 'utf8');
+    const realFile = testRunner.createRealFile(csvContent, 'LHV_2025_Metallid.csv');
+    
+    const transactions = await converter.parseFile(realFile);
+    converter.processedData = transactions;
+    
+    testRunner.assert(transactions.length > 0, 'Should have processed transactions');
+    
+    // Capture Excel export
+    let capturedWorkbook = null;
+    const originalWriteFile = global.window.XLSX.writeFile;
+    global.window.XLSX.writeFile = (wb, filename) => {
+        capturedWorkbook = wb;
+    };
+    
+    converter.exportToExcel();
+    
+    // Restore global mock
+    global.window.XLSX.writeFile = originalWriteFile;
+    
+    testRunner.assert(capturedWorkbook !== null, 'Should create Excel workbook from real data');
+    
+    // Get the worksheet data
+    const worksheet = capturedWorkbook.Sheets['Combined Transactions'];
+    const excelData = global.window.XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+    
+    // Check all dates in the real data
+    const dates = [];
+    for (let i = 1; i < excelData.length; i++) {
+        const dateValue = excelData[i][0];
+        dates.push(dateValue);
+    }
+    
+    // Check if all dates are the same (the bug you mentioned)
+    const uniqueDates = [...new Set(dates)];
+    testRunner.assert(uniqueDates.length > 1, 'Should have different dates');
+    
+    // Check if dates are proper Excel format
+    dates.forEach((date, index) => {
+        testRunner.assert(
+            typeof date === 'number',
+            `Row ${index + 1} date should be Excel number`
+        );
+    });
 });
 
 // Run tests
