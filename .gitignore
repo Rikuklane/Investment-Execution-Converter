@@ -136,4 +136,4 @@ dist
 .pnp.*
 
 # example files
-/transactions/*
+/examples/*
