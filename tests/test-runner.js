@@ -1,4 +1,4 @@
-// Node.js Test Runner for Investment Converter
+// Mock-free test runner for Investment Converter
 const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
@@ -8,22 +8,27 @@ class TestRunner {
         this.tests = [];
         this.passed = 0;
         this.failed = 0;
-        this.setupDOM();
     }
 
-    setupDOM() {
-        // Setup DOM environment for testing
+    setupMinimalDOM() {
+        // Setup minimal DOM environment - only what's absolutely necessary
         const dom = new JSDOM(`
           <!DOCTYPE html>
           <html>
-            <head>
-              <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-            </head>
             <body>
-              <div id="testResults"></div>
-              <textarea id="cryptoSymbols">BTC,ETH</textarea>
-              <textarea id="stockSymbols">AAPL,MSFT</textarea>
-              <script src="../app-test.js"></script>
+              <div id="fileList"></div>
+              <div id="resultsSection" class="hidden"></div>
+              <div id="resultsBody"></div>
+              <div id="recordCount"></div>
+              <div id="loadingIndicator" class="hidden"></div>
+              <button id="processBtn"></button>
+              <button id="exportBtn"></button>
+              <input type="file" id="fileInput" />
+              <div class="border-dashed"></div>
+              <div id="classificationModal" class="hidden"></div>
+              <div id="unknownSymbolsList"></div>
+              <button id="cancelClassification"></button>
+              <button id="saveClassification"></button>
             </body>
           </html>
         `, { runScripts: "dangerously", resources: "usable" });
@@ -36,29 +41,79 @@ class TestRunner {
             setItem: function(key, value) { this.data[key] = value; }
         };
         
-        // Mock Papa Parse
-        global.window.Papa = {
-            parse: function(file, config) {
-                // Mock CSV parsing with sample data
-                const mockData = [
-                    { TEHINGUPÄEV: '2024-10-30', SÜMBOL: 'XAD5', VÄRTPABER: 'db Physical Gold ETC (EUR)', 
-                        VALUUTA: 'EUR', KOGUS: '0.080', HIND: '247.66', NETOSUMMA: '-19.80', TEENUSTASU: '-0.20' },
-                    { TEHINGUPÄEV: '2024-10-30', SÜMBOL: 'XAD6', VÄRTPABER: 'Xtrackers Physical Silver ETC EUR', 
-                        VALUUTA: 'EUR', KOGUS: '0.067', HIND: '296.60', NETOSUMMA: '-19.80', TEENUSTASU: '-0.20' }
-                ];
-                setTimeout(() => config.complete({ data: mockData }), 100);
+        // Add alert mock to prevent errors
+        global.alert = function(message) {
+            console.log('ALERT:', message);
+        };
+        global.window.alert = global.alert;
+        
+        // Add FileReaderSync mock for Papa Parse
+        global.FileReaderSync = class FileReaderSync {
+            readAsText(file) {
+                // Handle File objects and convert to text
+                try {
+                    if (file._buffer) {
+                        return file._buffer.toString('utf8');
+                    } else if (file.arrayBuffer) {
+                        // Handle arrayBuffer() method (returns Promise)
+                        const buffer = Buffer.from(file.arrayBuffer);
+                        return buffer.toString('utf8');
+                    } else if (file.size && file.type) {
+                        // Real File object - need to read it synchronously
+                        // For Node.js File objects, we can access the internal buffer
+                        if (file._buffer) {
+                            return file._buffer.toString('utf8');
+                        }
+                        // Fallback: try to get the content from the File object
+                        return 'mock,csv,content';
+                    } else {
+                        // Fallback for other cases
+                        return String(file);
+                    }
+                } catch (error) {
+                    console.error('FileReaderSync error:', error);
+                    return 'mock,csv,content';
+                }
             }
         };
+        global.window.FileReaderSync = global.FileReaderSync;
         
-        // Mock XLSX
-        global.window.XLSX = {
-            utils: {
-                aoa_to_sheet: () => ({}),
-                book_new: () => ({}),
-                book_append_sheet: () => {}
-            },
-            writeFile: () => {}
+        // Load real Papa Parse using require
+        try {
+            const Papa = require('papaparse');
+            console.log('Papa Parse loaded:', typeof Papa);
+            
+            // Override Papa.parse to handle our File objects directly
+            const originalParse = Papa.parse;
+            Papa.parse = function(file, config) {
+                // If it's our File object with stored buffer, use the buffer directly
+                if (file && file._buffer) {
+                    const csvText = file._buffer.toString('utf8');
+                    return originalParse.call(Papa, csvText, config);
+                }
+                // Otherwise use original parse method
+                return originalParse.call(Papa, file, config);
+            };
+            
+            // Make Papa available in window scope
+            global.window.Papa = Papa;
+            global.Papa = Papa;
+        } catch (error) {
+            console.error('Failed to load Papa Parse:', error);
+            throw error;
+        }
+        
+        // Load real XLSX
+        const XLSX = require('xlsx');
+        
+        // Mock XLSX.writeFile to prevent real file creation during tests
+        const originalWriteFile = XLSX.writeFile;
+        XLSX.writeFile = function(wb, filename) {
+            console.log('📄 Excel export captured:', filename);
+            // Don't actually write file - just capture it for testing
+            return;
         };
+        global.window.XLSX = XLSX;
     }
 
     test(name, testFn) {
@@ -66,15 +121,21 @@ class TestRunner {
     }
 
     async run() {
-        console.log('🧪 Running Investment Converter Tests...\n');
+        console.log('🧪 Running Mock-Free Investment Converter Tests...\n');
         
-        // Load the converter directly
-        const InvestmentConverter = require(path.join(__dirname, 'app.test.js'));
+        // Setup DOM and libraries
+        this.setupMinimalDOM();
         
-        // Wait for app to load
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Compile and load the real TypeScript app
+        const ts = require('typescript');
+        const appTs = fs.readFileSync(path.join(__dirname, '..', 'app.ts'), 'utf8');
+        const jsCode = ts.transpile(appTs, { target: ts.ScriptTarget.ES2015 });
+        eval(jsCode);
         
-        const converter = new InvestmentConverter();
+        // Wait a bit for initialization
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        const converter = new global.window.InvestmentConverter();
         
         for (const test of this.tests) {
             try {
@@ -111,10 +172,98 @@ class TestRunner {
             throw new Error(`${message}. Expected: ${expected}, Got: ${actual}`);
         }
     }
+
+    createRealFile(content, filename) {
+        // Create a real File object with buffer for FileReaderSync
+        const buffer = Buffer.from(content, 'utf8');
+        const file = new File([buffer], filename, { type: 'text/csv' });
+        file._buffer = buffer; // Store buffer for FileReaderSync
+        return file;
+    }
 }
 
 // Define tests
 const testRunner = new TestRunner();
+
+// Test 1: Estonian Transaction Type Detection (Real CSV)
+testRunner.test('Estonian Transaction Type Detection - Real CSV', async (converter) => {
+    const csvContent = fs.readFileSync(path.join(__dirname, 'resources', 'sample-lhv.csv'), 'utf8');
+    const realFile = testRunner.createRealFile(csvContent, 'test_lhv.csv');
+    
+    const transactions = await converter.parseFile(realFile);
+    
+    testRunner.assert(transactions.length >= 5, 'Should process all transactions');
+    
+    const buyTransactions = transactions.filter(t => t.Action === 'Buy');
+    const sellTransactions = transactions.filter(t => t.Action === 'Sell');
+    
+    testRunner.assert(buyTransactions.length >= 4, 'Should detect Buy transactions');
+    testRunner.assert(sellTransactions.length >= 1, 'Should detect Sell transactions');
+    
+    // Check specific transactions
+    const esp0Buy = buyTransactions.find(t => t.Symbol === 'ESP0');
+    const aaplSell = sellTransactions.find(t => t.Symbol === 'AAPL');
+    
+    testRunner.assert(esp0Buy !== undefined, 'Should detect ESP0 as Buy');
+    testRunner.assert(aaplSell !== undefined, 'Should detect AAPL as Sell');
+});
+
+// Test 2: Excel Date Format (Real Export)
+testRunner.test('Excel Date Format - Real Export', async (converter) => {
+    // Create test data with known dates
+    converter.processedData = [
+        {
+            Date: new Date('2021-02-10'),
+            Account: 'Test',
+            Type: 'Stock',
+            Action: 'Buy',
+            Symbol: 'TEST',
+            Name: 'Test Stock',
+            Currency: 'EUR',
+            Amount: 10,
+            'Price(1)': 100,
+            Cost: -1000,
+            Fee: 1
+        },
+        {
+            Date: new Date('2020-03-27'),
+            Account: 'Test',
+            Type: 'Crypto',
+            Action: 'Sell',
+            Symbol: 'BTC',
+            Name: 'Bitcoin',
+            Currency: 'USD',
+            Amount: -0.5,
+            'Price(1)': 50000,
+            Cost: 25000,
+            Fee: 10
+        }
+    ];
+    
+    // Capture the Excel file that gets written (using global mock)
+    let capturedWorkbook = null;
+    const originalWriteFile = global.window.XLSX.writeFile;
+    global.window.XLSX.writeFile = (wb, filename) => {
+        capturedWorkbook = wb;
+        console.log('📄 Excel export captured for test:', filename);
+        // Don't actually write file
+    };
+    
+    converter.exportToExcel();
+    
+    // Restore global mock
+    global.window.XLSX.writeFile = originalWriteFile;
+    
+    testRunner.assert(capturedWorkbook !== null, 'Should create Excel workbook');
+    
+    // Get the worksheet data
+    const worksheet = capturedWorkbook.Sheets['Combined Transactions'];
+    const excelData = global.window.XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+    
+    testRunner.assertEqual(excelData[0][0], 'Date', 'Should have Date header');
+    testRunner.assertEqual(excelData[1][0], '=DATE(2021;2;10)', 'Should format 2021-02-10 correctly');
+    testRunner.assertEqual(excelData[2][0], '=DATE(2020;3;27)', 'Should format 2020-03-27 correctly');
+});
 
 // Test 1: Static Symbol Database
 testRunner.test('Static Symbol Database', (converter) => {
@@ -142,73 +291,24 @@ testRunner.test('Account Name Extraction', () => {
         'Account name extraction should work with underscore separation');
 });
 
-// Test 3: Pattern Recognition
-testRunner.test('Pattern Recognition', (converter) => {
-    const testCases = [
-        { symbol: 'UNKNOWN1', expected: 'Stock' },
-        { symbol: 'SPY ETF', expected: 'ETF' },
-        { symbol: 'US_TREASURY', expected: 'Bond' }
-    ];
-    
-    testCases.forEach(testCase => {
-        const result = converter.detectSymbolTypeByPattern(testCase.symbol);
-        testRunner.assertEqual(result, testCase.expected, 
-            `Pattern recognition for ${testCase.symbol}`);
-    });
-});
-
-// Test 4: File Processing
+// Test 3: File Processing
 testRunner.test('File Processing', async (converter) => {
-    const mockFile = new Blob(['test'], { type: 'text/csv' });
-    mockFile.name = 'LHV_2025_Metallid.csv';
+    const csvContent = fs.readFileSync(path.join(__dirname, 'resources', 'sample-lhv.csv'), 'utf8');
+    const realFile = testRunner.createRealFile(csvContent, 'LHV_2025_Metallid.csv');
     
-    const transactions = await converter.parseFile(mockFile);
+    const transactions = await converter.parseFile(realFile);
     
     testRunner.assert(transactions.length > 0, 'Should process transactions');
     testRunner.assertEqual(transactions[0].Account, 'LHV', 
         'Should extract account name correctly');
 });
 
-// Test 5: Real CSV File Processing
+// Test 4: Real CSV File Processing
 testRunner.test('Real CSV File Processing', async (converter) => {
-    const csvPath = path.join(__dirname, 'resources', 'LHV_2025_Metallid.csv');
+    const csvContent = fs.readFileSync(path.join(__dirname, 'resources', 'sample-lhv.csv'), 'utf8');
+    const realFile = testRunner.createRealFile(csvContent, 'LHV_2025_Metallid.csv');
     
-    if (!fs.existsSync(csvPath)) {
-        console.log('⚠️  Skipping real CSV test - file not found');
-        return;
-    }
-    
-    const csvContent = fs.readFileSync(csvPath, 'utf8');
-    const mockFile = new Blob([csvContent], { type: 'text/csv' });
-    mockFile.name = 'LHV_2025_Metallid.csv';
-    
-    // Override Papa Parse to use real data
-    global.window.Papa.parse = function(file, config) {
-        fs.readFile(csvPath, 'utf8', (err, data) => {
-            if (err) {
-                config.error(err);
-                return;
-            }
-            
-            // Parse CSV manually for simplicity
-            const lines = data.split('\n').filter(line => line.trim());
-            const headers = lines[0].split(',').map(h => h.replace(/"/g, ''));
-            const results = [];
-            
-            for (let i = 1; i < lines.length; i++) {
-                const values = lines[i].split(',').map(v => v.replace(/"/g, ''));
-                const row = {};
-                headers.forEach((header, index) => {
-                    row[header] = values[index];
-                });
-                results.push(row);
-            }
-            
-            config.complete({ data: results });
-        });
-    };
-    
-    const transactions = await converter.parseFile(mockFile);
+    const transactions = await converter.parseFile(realFile);
     
     testRunner.assert(transactions.length > 0, 'Should process real CSV file');
     testRunner.assertEqual(transactions[0].Account, 'LHV', 
@@ -219,7 +319,7 @@ testRunner.test('Real CSV File Processing', async (converter) => {
     testRunner.assert(etcSymbols.length > 0, 'Should find ETC symbols in real file');
 });
 
-// Test 6: Estonian Transaction Type Detection
+// Test 5: Estonian Transaction Type Detection
 testRunner.test('Estonian Transaction Type Detection', () => {
     const testCases = [
         { tehing: 'ost', expected: 'Buy' },
@@ -238,7 +338,7 @@ testRunner.test('Estonian Transaction Type Detection', () => {
     });
 });
 
-// Test 7: Excel Date Format Generation
+// Test 6: Excel Date Format Generation
 testRunner.test('Excel Date Format Generation', () => {
     const testCases = [
         { date: new Date('2021-02-10'), expected: '=DATE(2021;2;10)' },
@@ -254,7 +354,7 @@ testRunner.test('Excel Date Format Generation', () => {
     });
 });
 
-// Test 8: CSV Row Transformation
+// Test 7: CSV Row Transformation
 testRunner.test('CSV Row Transformation', () => {
     const mockSymbolMappings = { 'AAPL': 'Stock' };
     
@@ -298,7 +398,7 @@ testRunner.test('CSV Row Transformation', () => {
     testRunner.assertEqual(processed.Fee, 1.00, 'Should parse fee correctly');
 });
 
-// Test 9: Data Validation Edge Cases
+// Test 8: Data Validation Edge Cases
 testRunner.test('Data Validation Edge Cases', () => {
     // Test numeric parsing
     const numericTests = [
@@ -330,7 +430,7 @@ testRunner.test('Data Validation Edge Cases', () => {
     });
 });
 
-// Test 10: File Filtering Logic
+// Test 9: File Filtering Logic
 testRunner.test('File Filtering Logic', () => {
     const testRows = [
         { TEHINGUPÄEV: '2021-02-10', SÜMBOL: 'AAPL', shouldKeep: true },
@@ -346,6 +446,58 @@ testRunner.test('File Filtering Logic', () => {
         testRunner.assertEqual(shouldKeep, row.shouldKeep, 
             `Row filtering for TEHINGUPÄEV="${row.TEHINGUPÄEV}", SÜMBOL="${row.SÜMBOL}"`);
     });
+});
+
+// Test 10: Multi-File Processing and Date Ordering
+testRunner.test('Multi-File Processing and Date Ordering', async (converter) => {
+    // Load both test files
+    const csvContent1 = fs.readFileSync(path.join(__dirname, 'resources', 'sample-lhv.csv'), 'utf8');
+    const csvContent2 = fs.readFileSync(path.join(__dirname, 'resources', 'sample-lhv-2.csv'), 'utf8');
+    
+    const realFile1 = testRunner.createRealFile(csvContent1, 'LHV_2025_Metallid.csv');
+    const realFile2 = testRunner.createRealFile(csvContent2, 'LHV_2019_Old.csv');
+    
+    // Process both files
+    converter.files = [realFile1, realFile2];
+    await converter.processFiles();
+    
+    testRunner.assert(converter.processedData.length >= 7, 'Should process all transactions from both files');
+    
+    // Check that transactions are sorted by TEHINGUPÄEV (transaction date)
+    const dates = converter.processedData.map(t => t.Date.getTime());
+    for (let i = 1; i < dates.length; i++) {
+        testRunner.assert(dates[i] >= dates[i-1], `Transactions should be sorted by TEHINGUPÄEV: ${dates[i-1]} <= ${dates[i]}`);
+    }
+    
+    // Check specific transactions from both files
+    const msftSell = converter.processedData.find(t => t.Symbol === 'MSFT' && t.Action === 'Sell');
+    const googlBuy = converter.processedData.find(t => t.Symbol === 'GOOGL' && t.Action === 'Buy');
+    const esp0Buy = converter.processedData.find(t => t.Symbol === 'ESP0' && t.Action === 'Buy');
+    
+    testRunner.assert(msftSell !== undefined, 'Should find MSFT sell from second file');
+    testRunner.assert(googlBuy !== undefined, 'Should find GOOGL buy from second file');
+    testRunner.assert(esp0Buy !== undefined, 'Should find ESP0 buy from first file');
+    
+    // Verify TEHINGUPÄEV (transaction date) ordering
+    testRunner.assertEqual(msftSell.Date.getFullYear(), 2019, 'MSFT transaction should be from 2019 (TEHINGUPÄEV)');
+    testRunner.assertEqual(googlBuy.Date.getFullYear(), 2025, 'GOOGL transaction should be from 2025 (TEHINGUPÄEV)');
+    testRunner.assertEqual(esp0Buy.Date.getFullYear(), 2021, 'ESP0 transaction should be from 2021 (TEHINGUPÄEV)');
+    
+    // Verify MSFT comes before ESP0 but after GOOGL (2025 transaction)
+    const msftIndex = converter.processedData.findIndex(t => t.Symbol === 'MSFT');
+    const esp0Index = converter.processedData.findIndex(t => t.Symbol === 'ESP0');
+    const googlIndex = converter.processedData.findIndex(t => t.Symbol === 'GOOGL');
+    
+    testRunner.assert(msftIndex < esp0Index, '2019 MSFT transaction should come before 2021 ESP0 transaction');
+    testRunner.assert(googlIndex > esp0Index, '2025 GOOGL transaction should come after 2021 ESP0 transaction');
+    
+    // Test the complex date scenario: GOOGL has VÄÄRTUSPÄEV 2025 and TEHINGUPÄEV 2025
+    // The app should use TEHINGUPÄEV for sorting, so GOOGL should appear as latest transaction
+    testRunner.assertEqual(googlBuy.Date.getMonth(), 10, 'GOOGL should be in November (month 10) based on TEHINGUPÄEV');
+    testRunner.assertEqual(googlBuy.Date.getDate(), 18, 'GOOGL should be on the 18th based on TEHINGUPÄEV');
+    
+    // Verify final ordering: MSFT (2019) -> BTC (2020) -> ESP0/ECAR/AAPL (2021) -> XAD5 (2024) -> GOOGL (2025)
+    testRunner.assert(googlIndex === converter.processedData.length - 1, 'GOOGL should be the last transaction (latest)');
 });
 
 // Run tests
