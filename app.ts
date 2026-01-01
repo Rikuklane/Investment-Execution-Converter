@@ -251,12 +251,10 @@ class InvestmentConverter {
     private initializeEventListeners(): void {
         const fileInput = document.getElementById('fileInput') as HTMLInputElement;
         const processBtn = document.getElementById('processBtn') as HTMLButtonElement;
-        const exportBtn = document.getElementById('exportBtn') as HTMLButtonElement;
         const dropZone = document.querySelector('.border-dashed') as HTMLElement;
 
         fileInput.addEventListener('change', (e) => this.handleFileSelect(e));
         processBtn.addEventListener('click', () => this.processFiles());
-        exportBtn.addEventListener('click', () => this.exportToExcel());
 
         // Modal event listeners
         document.getElementById('cancelClassification')?.addEventListener('click', () => this.closeClassificationModal());
@@ -699,7 +697,14 @@ class InvestmentConverter {
     private getDecimalSeparator(): 'comma' | 'period' {
         // Get user selection from radio buttons, default to comma
         const selected = document.querySelector('input[name="decimalSeparator"]:checked') as HTMLInputElement;
-        return selected?.value === 'period' ? 'period' : 'comma';
+        const value = selected?.value;
+        
+        // If no radio button is selected (page just loaded), default to comma
+        if (!selected || (value !== 'comma' && value !== 'period')) {
+            return 'comma';
+        }
+        
+        return value === 'period' ? 'period' : 'comma';
     }
 
     private showLoading(show: boolean): void {
