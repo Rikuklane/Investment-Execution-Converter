@@ -47,6 +47,33 @@ class TestRunner {
         };
         global.window.alert = global.alert;
         
+        // Add File polyfill for Node.js environments
+        if (typeof File === 'undefined') {
+            global.File = class File {
+                constructor(chunks, filename, options = {}) {
+                    this.name = filename;
+                    this.size = chunks.reduce((total, chunk) => total + chunk.length, 0);
+                    this.type = options.type || '';
+                    this.lastModified = Date.now();
+                    this._buffer = chunks[0] || Buffer.alloc(0);
+                }
+                
+                arrayBuffer() {
+                    return Promise.resolve(this._buffer);
+                }
+                
+                text() {
+                    return Promise.resolve(this._buffer.toString('utf8'));
+                }
+                
+                stream() {
+                    const Readable = require('stream');
+                    return Readable.from(this._buffer.toString('utf8'));
+                }
+            };
+            global.window.File = global.File;
+        }
+        
         // Add FileReaderSync mock for Papa Parse
         global.FileReaderSync = class FileReaderSync {
             readAsText(file) {
@@ -144,6 +171,17 @@ class TestRunner {
             } catch (error) {
                 this.failed++;
                 console.log(`❌ ${test.name}: ${error.message}`);
+                
+                // Show full error details for debugging
+                if (error.stack) {
+                    const stackLines = error.stack.split('\n');
+                    // Show first few lines of stack trace (most relevant)
+                    stackLines.slice(1, 4).forEach(line => {
+                        if (line.trim()) {
+                            console.log(`   ${line.trim()}`);
+                        }
+                    });
+                }
             }
         }
         
